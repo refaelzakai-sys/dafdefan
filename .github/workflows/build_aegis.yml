@@ -1,0 +1,176 @@
+name: Build Complete Aegis Browser
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Generate Aegis Project Structure
+        run: |
+          # 1. יצירת מבנה התיקיות
+          mkdir -p app/src/main/java/com/refael/aegis
+          mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/layout
+          mkdir -p app/src/main/res/menu
+          mkdir -p app/src/main/res/mipmap-xxxhdpi
+
+          # 2. יצירת קובץ ההגדרות של פאנל הניהול (Management Panel)
+          # ברירת מחדל: מבוטל. אם תשנה את ה-locked ל-true ב-GitHub, הדפדפן יינעל.
+          cat <<EOF > app/src/main/res/values/admin_panel.xml
+          <resources>
+              <bool name="browser_locked">false</bool>
+              <string name="locked_url">https://www.google.com/search?q=aegis+browser</string>
+          </resources>
+          EOF
+
+          # 3. יצירת קובץ ה-MainActivity (לוגיקה מלאה)
+          cat <<EOF > app/src/main/java/com/refael/aegis/MainActivity.java
+          package com.refael.aegis;
+          
+          import android.os.Bundle;
+          import android.view.View;
+          import android.webkit.WebSettings;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import android.widget.Button;
+          import android.widget.EditText;
+          import androidx.appcompat.app.AppCompatActivity;
+          
+          public class MainActivity extends AppCompatActivity {
+              private WebView webView;
+              private EditText urlInput;
+          
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_main);
+          
+                  webView = findViewById(R.id.webView);
+                  urlInput = findViewById(R.id.urlInput);
+          
+                  # הפעלת הגדרות מומלצות
+                  WebSettings settings = webView.getSettings();
+                  settings.setJavaScriptEnabled(true);
+                  settings.setDomStorageEnabled(true);
+                  settings.setAppCacheEnabled(true);
+                  settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+                  settings.setUseWideViewPort(true);
+                  settings.setLoadWithOverviewMode(true);
+                  settings.setSupportZoom(true);
+                  settings.setBuiltInZoomControls(true);
+                  settings.setDisplayZoomControls(false);
+          
+                  webView.setWebViewClient(new WebViewClient());
+          
+                  # טעינת פאנל הניהול: בדיקה אם הדפדפן נעול
+                  boolean isLocked = getResources().getBoolean(R.bool.browser_locked);
+                  if (isLocked) {
+                      # אם נעול, טען רק את הכתובת המורשית
+                      String lockedUrl = getString(R.string.locked_url);
+                      webView.loadUrl(lockedUrl);
+                      urlInput.setEnabled(false);
+                      urlInput.setFocusable(false);
+                      # הסתרת פאנל הכתובת
+                      findViewById(R.id.navigationLayout).setVisibility(View.GONE);
+                  } else {
+                      # אם פתוח, טען את דף הבית
+                      webView.loadUrl("https://www.google.com");
+                  }
+              }
+          
+              # כפתורי ניווט
+              public void onBack(View v) { if (webView.canGoBack()) webView.goBack(); }
+              public void onForward(View v) { if (webView.canGoForward()) webView.goForward(); }
+              public void onReload(View v) { webView.reload(); }
+              public void onHome(View v) { webView.loadUrl("https://www.google.com"); }
+          
+              # טעינת URL משורת הכתובת
+              public void onGo(View v) {
+                  String url = urlInput.getText().toString();
+                  if (!url.startsWith("http")) url = "https://" + url;
+                  webView.loadUrl(url);
+                  urlInput.clearFocus();
+              }
+          }
+          EOF
+
+          # 4. יצירת קובץ ה-Layout (העיצוב המושך והמודרני)
+          cat <<EOF > app/src/main/res/layout/activity_main.xml
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+              
+              <LinearLayout android:id="@+id/navigationLayout" android:layout_width="match_parent" android:layout_height="wrap_content"
+                  android:orientation="horizontal" android:padding="8dp" android:background="#F0F0F0">
+                  <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="&#x2B05;" android:onClick="onBack" style="?android:attr/borderlessButtonStyle"/>
+                  <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="&#x27A1;" android:onClick="onForward" style="?android:attr/borderlessButtonStyle"/>
+                  <EditText android:id="@+id/urlInput" android:layout_width="0dp" android:layout_height="wrap_content"
+                      android:layout_weight="1" android:hint="https://www.google.com" android:inputType="textUri" android:background="#FFFFFF" android:padding="8dp"/>
+                  <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Go" android:onClick="onGo"/>
+                  <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="&#x27F3;" android:onClick="onReload" style="?android:attr/borderlessButtonStyle"/>
+                  <Button android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="&#x1F3E0;" android:onClick="onHome" style="?android:attr/borderlessButtonStyle"/>
+              </LinearLayout>
+              
+              <WebView android:id="@+id/webView" android:layout_width="match_parent" android:layout_height="match_parent" />
+          </LinearLayout>
+          EOF
+
+          # 5. יצירת המניפסט (השם "Aegis" משולב)
+          cat <<EOF > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.refael.aegis">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+              <application android:label="Aegis" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" android:theme="@style/Theme.AppCompat.Light.NoActionBar" android:usesCleartextTraffic="true">
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # 6. יצירת קובצי ההגדרות (build.gradle)
+          cat <<EOF > build.gradle
+          buildscript { repositories { google(); mavenCentral() } dependencies { classpath 'com.android.tools.build:gradle:8.2.0' } }
+          allprojects { repositories { google(); mavenCentral() } }
+          EOF
+
+          cat <<EOF > app/build.gradle
+          plugins { id 'com.android.application' }
+          android { namespace 'com.refael.aegis'; compileSdk 34; defaultConfig { applicationId "com.refael.aegis"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" } }
+          dependencies { implementation 'androidx.appcompat:appcompat:1.6.1'; implementation 'com.google.android.material:material:1.9.0' }
+          EOF
+
+          cat <<EOF > settings.gradle
+          include ':app'
+          EOF
+
+          # 7. הורדת הלוגו
+          curl -L "https://i.ibb.co/6809XW6/image.png" -o app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          curl -L "https://i.ibb.co/6809XW6/image.png" -o app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+
+      - name: Build APK
+        run: |
+          gradle wrapper
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload Final APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aegis-Complete-Browser
+          path: app/build/outputs/apk/debug/*.apk
+
