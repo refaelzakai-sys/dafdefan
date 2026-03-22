@@ -1,4 +1,4 @@
-name: Aegis Browser Build
+name: Aegis Final Build
 
 on:
   push:
@@ -16,14 +16,14 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android Project
+      - name: Create Project Structure
         run: |
           mkdir -p app/src/main/java/com/refael/aegis
           mkdir -p app/src/main/res/layout
           mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/mipmap-mdpi
 
-          # מניפסט האפליקציה
+          # Manifest
           cat <<'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.refael.aegis">
@@ -39,7 +39,7 @@ jobs:
           </manifest>
           EOF
 
-          # עיצוב הדפדפן (שורת כתובת + כפתור)
+          # UI Layout
           cat <<'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -52,7 +52,7 @@ jobs:
           </LinearLayout>
           EOF
 
-          # קוד הדפדפן
+          # Java Code
           cat <<'EOF' > app/src/main/java/com/refael/aegis/MainActivity.java
           package com.refael.aegis;
           import android.app.Activity;
@@ -92,7 +92,7 @@ jobs:
           }
           EOF
 
-          # הגדרות בנייה
+          # Build Configs
           cat <<'EOF' > build.gradle
           buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.1.0' } }
           allprojects { repositories { google(); mavenCentral() } }
@@ -102,8 +102,6 @@ jobs:
           android { namespace 'com.refael.aegis'; compileSdk 34; defaultConfig { applicationId "com.refael.aegis"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" } }
           EOF
           echo "include ':app'" > settings.gradle
-
-          # הורדת הלוגו שלך
           curl -L "https://i.ibb.co/6809XW6/image.png" -o app/src/main/res/mipmap-mdpi/ic_launcher.png
 
       - name: Build APK
@@ -115,6 +113,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Aegis-App
+          name: Aegis-Browser-APK
           path: app/build/outputs/apk/debug/*.apk
-
