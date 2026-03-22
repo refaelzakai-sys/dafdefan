@@ -1,25 +1,18 @@
 name: Build My Browser APK
 on: [push]
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-
       - name: Install Dependencies
-        run: |
-          pip install flet requests
-
+        run: pip install flet requests
       - name: Build Android APK
-        run: |
-          flet build apk
-
+        run: flet build apk
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
