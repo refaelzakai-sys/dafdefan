@@ -16,31 +16,32 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
 
-      - name: Update App Name and Home Screen Icon
+      - name: Update App Name and Icon
         run: |
-          # עדכון שם האפליקציה ל-Aegis
+          # מחפש את קובץ ה-strings ומשנה את השם ל-Aegis
           find . -name "strings.xml" -exec sed -i 's/Android App/Aegis/g' {} + || true
           
-          # הורדת הלוגו החדש למסך הבית (Launcher Icon)
-          # משתמש בקישור ישיר לקובץ התמונה כדי למנוע שגיאות
+          # הורדת הלוגו החדש למסך הבית (Direct Link)
           ICON_URL="https://i.ibb.co/6809XW6/image.png"
-          
-          # החלפת האייקון בכל התיקיות הרלוונטיות
-          curl -L "$ICON_URL" -o app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
-          curl -L "$ICON_URL" -o app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png || true
-          # גיבוי למקרה שהתיקיות בנתיב אחר
-          curl -L "$ICON_URL" -o app/src/main/res/drawable/ic_launcher.png || true
+          find . -name "ic_launcher.png" -exec curl -L "$ICON_URL" -o {} \; || true
+          find . -name "ic_launcher_round.png" -exec curl -L "$ICON_URL" -o {} \; || true
 
       - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+        run: find . -name "gradlew" -exec chmod +x {} \;
 
       - name: Build with Gradle
-        run: ./gradlew assembleDebug
+        run: |
+          # מחפש את קובץ ה-gradlew ומריץ אותו מאיפה שהוא נמצא
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "Error: gradlew not found!"
+            exit 1
+          fi
+          $GRADLEW_PATH assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Aegis-App
-          path: app/build/outputs/apk/debug/*.apk
+          path: "**/build/outputs/apk/debug/*.apk"
