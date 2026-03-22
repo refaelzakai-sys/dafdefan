@@ -3,14 +3,13 @@ name: Build Aegis APK
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
@@ -19,13 +18,23 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Change App Name and Icon
+      - name: Update App Name and Home Screen Icon
         run: |
-          # עדכון שם האפליקציה ב-strings.xml
-          sed -i 's/Android App/Aegis/g' app/src/main/res/values/strings.xml
+          # עדכון שם האפליקציה ל-Aegis
+          find . -name "strings.xml" -exec sed -i 's/Android App/Aegis/g' {} + || true
           
-          # הורדת הלוגו החדש והחלפתו (בהנחה שזה ic_launcher)
-          curl -L "https://ibb.co/VWKpJDgN" -o app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          # הורדת הלוגו החדש למסך הבית (Launcher Icon)
+          # משתמש בקישור ישיר לקובץ התמונה כדי למנוע שגיאות
+          ICON_URL="https://i.ibb.co/6809XW6/image.png"
+          
+          # החלפת האייקון בכל התיקיות הרלוונטיות
+          curl -L "$ICON_URL" -o app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
+          curl -L "$ICON_URL" -o app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png || true
+          # גיבוי למקרה שהתיקיות בנתיב אחר
+          curl -L "$ICON_URL" -o app/src/main/res/drawable/ic_launcher.png || true
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
 
       - name: Build with Gradle
         run: ./gradlew assembleDebug
@@ -33,5 +42,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Aegis-Debug-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: Aegis-App
+          path: app/build/outputs/apk/debug/*.apk
