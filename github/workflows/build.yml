@@ -14,7 +14,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install flet supabase
+          pip install flet requests
 
       - name: Build Android APK
         run: |
@@ -25,4 +25,3 @@ jobs:
         with:
           name: browser-app
           path: build/apk/*.apk
-
