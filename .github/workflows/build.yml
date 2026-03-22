@@ -22,7 +22,7 @@ jobs:
       - name: Change App Name and Icon
         run: |
           # עדכון שם האפליקציה ב-strings.xml
-          sed -i 's/Android App/Aegis/g' app/src/main/res/values/strings.xml
+          sed -i 's/And App/Aegis/g' app/src/main/res/values/strings.xml
           
           # הורדת הלוגו החדש והחלפתו (בהנחה שזה ic_launcher)
           curl -L "https://ibb.co/VWKpJDgN" -o app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
