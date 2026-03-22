@@ -1,4 +1,4 @@
-name: Aegis Final Build
+name: Aegis Browser Final
 
 on:
   push:
@@ -16,19 +16,18 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Create Project Structure
+      - name: Create Android Project
         run: |
           mkdir -p app/src/main/java/com/refael/aegis
           mkdir -p app/src/main/res/layout
           mkdir -p app/src/main/res/values
-          mkdir -p app/src/main/res/mipmap-mdpi
 
           # Manifest
           cat <<'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.refael.aegis">
               <uses-permission android:name="android.permission.INTERNET" />
-              <application android:label="Aegis" android:icon="@mipmap/ic_launcher" android:usesCleartextTraffic="true">
+              <application android:label="Aegis" android:usesCleartextTraffic="true">
                   <activity android:name=".MainActivity" android:exported="true" android:theme="@android:style/Theme.NoTitleBar">
                       <intent-filter>
                           <action android:name="android.intent.action.MAIN" />
@@ -39,15 +38,11 @@ jobs:
           </manifest>
           EOF
 
-          # UI Layout
+          # Layout
           cat <<'EOF' > app/src/main/res/layout/activity_main.xml
           <?xml version="1.0" encoding="utf-8"?>
           <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
-              <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:padding="10dp" android:background="#EEEEEE">
-                  <EditText android:id="@+id/urlInput" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:hint="Enter URL" android:inputType="textUri" android:background="#FFFFFF" android:padding="10dp"/>
-                  <Button android:id="@+id/btnGo" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="GO" />
-              </LinearLayout>
               <WebView android:id="@+id/webView" android:layout_width="match_parent" android:layout_height="match_parent" />
           </LinearLayout>
           EOF
@@ -57,37 +52,18 @@ jobs:
           package com.refael.aegis;
           import android.app.Activity;
           import android.os.Bundle;
-          import android.view.View;
           import android.webkit.WebView;
           import android.webkit.WebViewClient;
-          import android.widget.Button;
-          import android.widget.EditText;
 
           public class MainActivity extends Activity {
-              WebView webView;
               @Override
               protected void onCreate(Bundle savedInstanceState) {
                   super.onCreate(savedInstanceState);
                   setContentView(R.layout.activity_main);
-                  webView = findViewById(R.id.webView);
-                  final EditText urlInput = findViewById(R.id.urlInput);
-                  Button btnGo = findViewById(R.id.btnGo);
+                  WebView webView = findViewById(R.id.webView);
                   webView.setWebViewClient(new WebViewClient());
                   webView.getSettings().setJavaScriptEnabled(true);
                   webView.loadUrl("https://www.google.com");
-                  btnGo.setOnClickListener(new View.OnClickListener() {
-                      @Override
-                      public void onClick(View v) {
-                          String url = urlInput.getText().toString();
-                          if (!url.startsWith("http")) url = "https://" + url;
-                          webView.loadUrl(url);
-                      }
-                  });
-              }
-              @Override
-              public void onBackPressed() {
-                  if (webView.canGoBack()) webView.goBack();
-                  else super.onBackPressed();
               }
           }
           EOF
@@ -97,12 +73,17 @@ jobs:
           buildscript { repositories { google(); mavenCentral() }; dependencies { classpath 'com.android.tools.build:gradle:8.1.0' } }
           allprojects { repositories { google(); mavenCentral() } }
           EOF
+
           cat <<'EOF' > app/build.gradle
           plugins { id 'com.android.application' }
-          android { namespace 'com.refael.aegis'; compileSdk 34; defaultConfig { applicationId "com.refael.aegis"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" } }
+          android { 
+            namespace 'com.refael.aegis'
+            compileSdk 34
+            defaultConfig { applicationId "com.refael.aegis"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" } 
+          }
           EOF
+
           echo "include ':app'" > settings.gradle
-          curl -L "https://i.ibb.co/6809XW6/image.png" -o app/src/main/res/mipmap-mdpi/ic_launcher.png
 
       - name: Build APK
         run: |
@@ -113,5 +94,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Aegis-Browser-APK
+          name: Aegis-Browser
           path: app/build/outputs/apk/debug/*.apk
