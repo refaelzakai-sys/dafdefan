@@ -1,0 +1,37 @@
+name: Build Aegis APK
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android Project Files
+        run: |
+          mkdir -p app/src/main/res/mipmap-xxxhdpi
+          # הורדת הלוגו למקום הנכון
+          curl -L "https://i.ibb.co/6809XW6/image.png" -o app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+          curl -L "https://i.ibb.co/6809XW6/image.png" -o app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+          
+          # יצירת קובץ ה-Wrapper של Gradle כדי שהבנייה תרוץ
+          gradle wrapper
+
+      - name: Build APK
+        run: ./gradlew assembleDebug
+
+      - name: Upload Finished APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aegis-Browser
+          path: app/build/outputs/apk/debug/*.apk
+
