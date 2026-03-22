@@ -1,4 +1,4 @@
-name: Build Aegis APK
+name: Build Aegis Browser
 
 on:
   push:
@@ -16,22 +16,82 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android Project Files
+      - name: Generate Android Project Structure
         run: |
+          # יצירת מבנה תיקיות
+          mkdir -p app/src/main/java/com/refael/aegis
+          mkdir -p app/src/main/res/values
           mkdir -p app/src/main/res/mipmap-xxxhdpi
-          # הורדת הלוגו למקום הנכון
+
+          # 1. יצירת המניפסט
+          cat <<EOF > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.refael.aegis">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application android:label="Aegis" android:icon="@mipmap/ic_launcher" android:theme="@style/Theme.AppCompat.Light.NoActionBar" android:usesCleartextTraffic="true">
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # 2. יצירת קוד ה-Java (דפדפן עם שורת כתובת בסיסית)
+          cat <<EOF > app/src/main/java/com/refael/aegis/MainActivity.java
+          package com.refael.aegis;
+          import android.os.Bundle;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import androidx.appcompat.app.AppCompatActivity;
+          public class MainActivity extends AppCompatActivity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  WebView webView = new WebView(this);
+                  webView.getSettings().setJavaScriptEnabled(true);
+                  webView.setWebViewClient(new WebViewClient());
+                  webView.loadUrl("https://www.google.com");
+                  setContentView(webView);
+              }
+          }
+          EOF
+
+          # 3. יצירת קבצי הגדרות (build.gradle)
+          cat <<EOF > build.gradle
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
+          }
+          allprojects { repositories { google(); mavenCentral() } }
+          EOF
+
+          cat <<EOF > app/build.gradle
+          plugins { id 'com.android.application' }
+          android {
+              namespace 'com.refael.aegis'
+              compileSdk 34
+              defaultConfig { applicationId "com.refael.aegis"; minSdk 24; targetSdk 34; versionCode 1; versionName "1.0" }
+          }
+          dependencies { implementation 'androidx.appcompat:appcompat:1.6.1' }
+          EOF
+
+          cat <<EOF > settings.gradle
+          include ':app'
+          EOF
+
+          # 4. הורדת הלוגו
           curl -L "https://i.ibb.co/6809XW6/image.png" -o app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-          curl -L "https://i.ibb.co/6809XW6/image.png" -o app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
-          
-          # יצירת קובץ ה-Wrapper של Gradle כדי שהבנייה תרוץ
-          gradle wrapper
 
       - name: Build APK
-        run: ./gradlew assembleDebug
+        run: |
+          gradle wrapper
+          chmod +x gradlew
+          ./gradlew assembleDebug
 
-      - name: Upload Finished APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Aegis-Browser
+          name: Aegis-Final-App
           path: app/build/outputs/apk/debug/*.apk
-
